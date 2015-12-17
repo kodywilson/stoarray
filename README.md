@@ -9,13 +9,15 @@ In your script:
 
     require 'stoarray'
 
-EMC's Xtremio and Pure's storage arrays are currently supported.
+EMC's Xtremio and Pure's storage arrays are currently supported. PURE IS
+NOT WORKING RIGHT NOW!!!
 
 Both api's use json for parameters and my examples below follow suit.
 I prefer to set variables that will not change in a json configuration file.
 It is very easy to then build from there.
 
-Examples using Pure:
+Examples using Pure: DON'T USE THESE EXAMPLES. THE GEM HAS BEEN UPDATED
+AND TESTED WITH XTREMIO BUT NOT PURE!
 --------------------
 
 ###First the json configuration file:
@@ -88,33 +90,32 @@ In this example, you end up with a new host on the array, named testsrv01, inclu
       "headers": {
         "Content-Type": "application/json",
         "authorization":"Basic alsdkjfsldakjflkdsjflkasdj=="
+      },
+      "params_refresh_u04": {
+        "cluster-id": "xtrmcluster01",
+        "from-consistency-group-id": "x0319t186_u04_src",
+        "to-snapshot-set-id": "x0319t186_u04_des"
       }
     }
 
-base_url      - URL for your array and api
-headers       - Content type and authorization
-authorization - "Basic 'Base64 hash of your username and password'"
+base_url        - URL for your array and api
+headers         - Content type and authorization
+  authorization - "Basic 'Base64 hash of your username and password'"
 
-###Back to your script, after the require 'stoarray'
+###Now for your script - this one does a clone refresh
+
+    #!/usr/bin/env ruby
+
+    require 'stoarray'
 
     # Location of json configuration file
-    conf    = JSON.parse(File.read('/Users/yourid/xtremio.json'))
+    conf    = JSON.parse(File.read('/path/to/config/file/xtremioclone.json'))
 
-    base_url    = conf['base_url']
-    headers     = conf['headers']
+    headers = conf['headers']
 
-    # Get information about clusters
-    url     = conf['base_url'] + 'clusters'
-    clusts  = JSON.parse((Stoarray.new(headers: headers, params: {}, url: url).host).body)
-
-    puts clusts
-
-    # Get all volumes
-    url     = conf['base_url'] + 'volumes'
-    volume  = JSON.parse((Stoarray.new(headers: headers, params: {}, url: url).host).body)
-
-    volume.each do |key, val|
-      val.each do |pal|
-        puts pal['name']
-      end
-    end
+    # Refresh the snap set
+    url = conf['base_url'] + 'snapshots'
+    params  = conf['params_refresh_u04']
+    refresh = Stoarray.new(headers: headers, meth: 'Post', params: params, url: url).refresh
+    puts "Status:   " + refresh['status']
+    puts "Response: " + refresh['response'].to_s
