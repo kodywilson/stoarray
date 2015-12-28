@@ -3,21 +3,35 @@ stoarray
 
 Library for making api calls to storage arrays with Ruby
 
-    gem install stoarray
+## Installation
+
+Add this line to your application's Gemfile:
+
+```ruby
+gem 'stoarray'
+```
+
+And then execute:
+
+    $ bundle
+
+Or install it yourself as:
+
+    $ gem install stoarray
+
+## Usage
 
 In your script:
 
     require 'stoarray'
 
-EMC's Xtremio and Pure's storage arrays are currently supported. PURE IS
-NOT WORKING RIGHT NOW!!!
+EMC's Xtremio and Pure's storage arrays are currently supported.
 
 Both api's use json for parameters and my examples below follow suit.
 I prefer to set variables that will not change in a json configuration file.
 It is very easy to then build from there.
 
-Examples using Pure: DON'T USE THESE EXAMPLES. THE GEM HAS BEEN UPDATED
-AND TESTED WITH XTREMIO BUT NOT PURE!
+Examples using Pure:
 --------------------
 
 ###First the json configuration file:
@@ -70,7 +84,7 @@ Now we will send application type json and the cookie with each call.
     params   = conf['params_host_testsrv01']
     url_host = conf['base_url'] + 'host/' + conf['newhost']
     host     = Stoarray.new(headers: headers, meth: 'Post', params: params, url: url_host).host
-    puts JSON.parse(host.body)
+    puts host['response']
 
     # Create volumes and map them to new host
     conf['new_luns_testsrv01'].each do |vol|
@@ -79,7 +93,7 @@ Now we will send application type json and the cookie with each call.
       puts JSON.parse(voly.body) if verbose == true
       url_map = url_host + '/volume/' + vol
       mappy = Stoarray.new(headers: headers, meth: 'Post', params: {}, url: url_map).host
-      puts JSON.parse(mappy.body) if verbose == true
+      puts mappy['response'] if verbose == true
     end
 
 In this example, you end up with a new host on the array, named testsrv01, including WWN's, and 5 10GB volumes mapped to the host.
@@ -117,5 +131,19 @@ headers         - Content type and authorization
     url = conf['base_url'] + 'snapshots'
     params  = conf['params_refresh_u04']
     refresh = Stoarray.new(headers: headers, meth: 'Post', params: params, url: url).refresh
-    puts "Status:   " + refresh['status']
+    puts "Status:   " + refresh['status'].to_s
     puts "Response: " + refresh['response'].to_s
+
+## Development
+
+After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+
+To install this gem onto your local machine, run `bundle exec rake install` or follow the instructions at the top of the readme.
+
+## Contributing
+
+Bug reports and pull requests are welcome on GitHub at https://github.com/kodywilson/stoarray. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
+
+## License
+
+The gem is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
