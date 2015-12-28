@@ -34,7 +34,7 @@ class Stoarray
         "ERROR: Wrong url for the #{method_name} method.\n"\
         "Sent: #{url}\n"\
         "Expected: \"#{wanted}\" as part of the url.",
-      "status" => "DORKED!"
+      "status" => 400
     }
   end
 
@@ -65,17 +65,21 @@ class Stoarray
     case @url.to_s
     when /snapshot/ # Xtremio
       @call.body = flippy(JSON.parse(@call.body)).to_json
+      refreshy = @request.start { |http| http.request(@call) }
+      responder(refreshy)
     when /volume/ # Pure, handle the interim snap automagically
       # obviously not implemented yet :)
+      refreshy = @request.start { |http| http.request(@call) }
+      responder(refreshy)
+    else
+      error_text("refresh", @url.to_s, "snapshot or volume")
     end
-    refreshy = @request.start { |http| http.request(@call) }
-    responder(refreshy)
   end
 
   def responder(response) # combine into one method? with error_text
     response = {
       "response" => JSON.parse(response.body),
-      "status" => response.code
+      "status" => response.code.to_i
     }
   end
 

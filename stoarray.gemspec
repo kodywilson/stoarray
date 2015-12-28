@@ -1,12 +1,27 @@
-Gem::Specification.new do |s|
-  s.name         = 'stoarray'
-  s.version      = '0.0.1'
-  s.date         = '2015-11-17'
-  s.summary      = "Storage array Ruby sdk"
-  s.description  = "Interact with storage array api using Ruby"
-  s.authors      = ["Kody Wilson"]
-  s.email        = 'kodywilson@gmail.com'
-  s.files        = ["lib/stoarray.rb", "lib/arraycalls.rb"]
-  s.homepage     = 'https://github.com/kodywilson/stoarray'
-  s.license      = 'MIT'
+# coding: utf-8
+lib = File.expand_path('../lib', __FILE__)
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+require 'stoarray/version'
+dev_deps = %w{bundler coveralls guard guard-rspec pry pry-nav pry-remote rake rspec}
+
+Gem::Specification.new do |spec|
+  spec.name          = "stoarray"
+  spec.version       = Stoarray::VERSION
+  spec.date          = "2015-12-28"
+  spec.authors       = ["Kody Wilson"]
+  spec.email         = ["kodywilson@gmail.com"]
+  spec.summary       = %q{Storage array Ruby sdk}
+  spec.description   = %q{Interact with storage array api using Ruby}
+  spec.homepage      = "https://github.com/kodywilson/stoarray"
+  spec.license       = "MIT"
+
+  spec.files         = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
+  spec.bindir        = "exe"
+  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
+  spec.require_paths = ["lib"]
+
+  dev_deps.each do |deppy|
+    spec.add_development_dependency deppy
+  end
+
 end
