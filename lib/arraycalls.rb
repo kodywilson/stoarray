@@ -18,14 +18,23 @@ class Stoarray
     @request.verify_mode = OpenSSL::SSL::VERIFY_NONE # parameterize?
   end
 
-  def cookie
-    @response = @request.start { |http| http.request(@call) }
-    all_cookies = @response.get_fields('set-cookie')
-    cookies_array = Array.new
-    all_cookies.each { | cookie |
-      cookies_array.push(cookie.split('; ')[0])
-    }
-    cookies = cookies_array.join('; ')
+  def cookie(testy: false)
+    if @url.to_s =~ /auth\/session/
+      case testy
+      when false
+        @response = @request.start { |http| http.request(@call) }
+        all_cookies = @response.get_fields('set-cookie')
+      when true
+        all_cookies = ['cookie time']
+      end
+      cookies_array = Array.new
+      all_cookies.each { | cookie |
+        cookies_array.push(cookie.split('; ')[0])
+      }
+      cookies = cookies_array.join('; ')
+    else
+      error_text("cookie", @url.to_s, 'auth/session')
+    end
   end
 
   def error_text(method_name, url, wanted)
@@ -38,10 +47,19 @@ class Stoarray
     }
   end
 
-  def flippy(temp_hash)
+  def flippy(temp_hash, testy: false)
     flippy = temp_hash['to-snapshot-set-id'] + '_347'
     url = 'https://sa0319xms01/api/json/v2/types/snapshot-sets'
-    x = Stoarray.new(headers: @headers, meth: 'Get', params: {}, url: url).snap
+    case testy
+    when false
+      x = Stoarray.new(headers: @headers, meth: 'Get', params: {}, url: url).snap
+    when true
+      x = {
+        "response" => {
+          "snapshot-sets" => [ { "name" => flippy } ]
+        }
+      }
+    end
     if x['response']['snapshot-sets'].any? { |y| y['name'].include?(flippy) }
       temp_hash['snapshot-set-name']  = temp_hash['to-snapshot-set-id']
       temp_hash['to-snapshot-set-id'] = flippy
