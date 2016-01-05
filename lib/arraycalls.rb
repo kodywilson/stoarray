@@ -49,7 +49,7 @@ class Stoarray
 
   def flippy(temp_hash, testy: false)
     flippy = temp_hash['to-snapshot-set-id'] + '_347'
-    url = 'https://sa0319xms01/api/json/v2/types/snapshot-sets'
+    url = 'https://' + @url.host + '/api/json/v2/types/snapshot-sets'
     case testy
     when false
       x = Stoarray.new(headers: @headers, meth: 'Get', params: {}, url: url).snap
