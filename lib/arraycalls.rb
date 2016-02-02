@@ -79,18 +79,88 @@ class Stoarray
     end
   end
 
+  def pgroup
+    if @url.to_s =~ /pgroup/
+      response = @request.start { |http| http.request(@call) }
+      responder(response)
+    else
+      error_text("pgroup", @url.to_s, "pgroup")
+    end
+  end
+
   def refresh
     case @url.to_s
     when /snapshot/ # Xtremio
       @call.body = flippy(JSON.parse(@call.body)).to_json
       refreshy = @request.start { |http| http.request(@call) }
       responder(refreshy)
-    when /volume/ # Pure, handle the interim snap automagically
-      # obviously not implemented yet :)
-      refreshy = @request.start { |http| http.request(@call) }
-      responder(refreshy)
+    when /1.4/ # Pure, handle the interim snap automagically
+      error_state = false
+      url     = 'https://' + @url.host + '/api/1.4/pgroup'
+      source  = (JSON.parse(@call.body))['source']
+      suffix  = Time.new.strftime("%A") # Day of the week.
+      pam     = { :snap => true, :source => source, :suffix => suffix }
+      snap    = Stoarray.new(headers: @headers, meth: 'Post', params: pam, url: url).pgroup
+      respond = {
+        "response" => {
+          "snap" => {
+            "response" => snap['response']
+          }
+        },
+        "status" => {
+          "snap" => {
+            "status" => snap['status']
+          }
+        }
+      }
+      if snap['status'] >= 200 && snap['status'] <= 299
+        pairs   = (JSON.parse(@call.body))['snap_pairs']
+        pairs.each do |key, val|
+          tgt = 'clone_' + val
+          src = source[0] + '.' + suffix + '.' + key
+          pam = { :overwrite => true, :source => src }
+          url = 'https://' + @url.host + '/api/1.4/volume/' + val
+          clone = Stoarray.new(headers: @headers, meth: 'Post', params: pam, url: url).volume
+          respond['response'][tgt] = {
+            "response" => clone['response']
+          }
+          respond['status'][tgt] = {
+            "status" => clone['status']
+          }
+        end
+        url   = 'https://' + @url.host + '/api/1.4/pgroup/' + source[0] + '.' + suffix
+        zappy = Stoarray.new(headers: @headers, meth: 'Delete', params: {}, url: url).pgroup
+        respond['response']['destroy'] = {
+          "response" => zappy['response']
+        }
+        respond['status']['destroy'] = {
+          "status" => zappy['status']
+        }
+        pam   = { :eradicate => true }
+        disintegrate = Stoarray.new(headers: @headers, meth: 'Delete', params: pam, url: url).pgroup
+        respond['response']['eradicate'] = {
+          "response" => disintegrate['response']
+        }
+        respond['status']['eradicate'] = {
+          "status" => disintegrate['status']
+        }
+      else
+        respond
+      end
+      respond['status'].each do |key, val|
+        error_state = true if val.any? { |status, code| code.to_i < 200 || code.to_i > 299 }
+      end
+      if error_state == true
+        respond
+      else
+        response = {
+          "response" =>
+            "SUCCESS: Refresh completed for #{source[0]} protection group.\n",
+          "status" => 201
+        }
+      end
     else
-      error_text("refresh", @url.to_s, "snapshot or volume")
+      error_text("refresh", @url.to_s, "snapshot or 1.4")
     end
   end
 

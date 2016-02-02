@@ -64,6 +64,16 @@ describe Stoarray do
     end
   end
 
+  describe ".pgroup" do
+    context "given the wrong url" do
+      it "returns a failure code" do
+        url = base_url + 'pgruop'
+        pdaddy = Stoarray.new(headers: headers, meth: 'Get', params: params, url: url).pgroup
+        expect(pdaddy['status']).to eql(400)
+      end
+    end
+  end
+
   describe ".refresh" do
     context "given the wrong url" do
       it "returns a failure code" do
