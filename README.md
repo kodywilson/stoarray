@@ -19,7 +19,9 @@ And then execute:
 
 In your script:
 
-    require 'stoarray'
+```ruby
+require 'stoarray'
+```
 
 EMC's Xtremio and Pure's storage arrays are currently supported.
 
@@ -27,41 +29,46 @@ Both api's use json for parameters and the examples below follow suit.
 I prefer to set variables that will not change in a json configuration file.
 It is very easy to then build from there.
 
-Examples using Pure:
---------------------
+## Clone refresh using Pure
+---------------------------
 
 ###First the json configuration file:
+
     {
       "authorization":"123li123o90yourapitoken2h1hi3",
-      "base_url":"https://purearray01/api/1.4/",
+      "base_url":"https:///purearray01.something.net/api/1.4/",
       "headers": { "Content-Type": "application/json" },
-      "newhost": "testsrv01",
-      "new_luns_testsrv01": [
-        "testsrv01_u23_1_src",
-        "testsrv01_u23_2_src",
-        "testsrv01_u23_3_src",
-        "testsrv01_u23_4_src",
-        "testsrv01_u23_5_src"
-        ],
-      "params_host_testsrv01": {
-        "wwnlist":  [
-          "10:00:00:00:C1:A3:BG:16",
-          "10:00:00:00:C1:A3:BG:17"
-          ]
+      "params_snap_u23": {
+        "snap_pairs": {
+          "x0319t186_u23_1_src": "x0319t186_u23_1_des",
+          "x0319t186_u23_2_src": "x0319t186_u23_2_des",
+          "x0319t186_u23_3_src": "x0319t186_u23_3_des",
+          "x0319t186_u23_4_src": "x0319t186_u23_4_des",
+          "x0319t186_u23_5_src": "x0319t186_u23_5_des"
+        },
+        "source": [
+          "x0319t186u23"
+        ]
       }
     }
 
 The top three likely will not change between api calls.
 
 + authorization - This is your api token.
-+ base_url      - URL for your array and api
++ base_url      - URL for your array and api version
 + headers       - Pass the content type (JSON in this case)
+
+These are what you need to set for clone refreshes. In this example,
+they are nested under "params_snap_u23".
+
++ snap_pairs    - Map source volume(s) to target volume(s).
++ source        - This is the name of the source protection group.
 
 ###Back to your script, after the require 'stoarray'
 
 ```ruby
 # Location of json configuration file and api token
-conf    = JSON.parse(File.read('/Users/yourid/pure.json'))
+conf    = JSON.parse(File.read('/Some/path/pure.json'))
 token   = conf['authorization']
 ```
 
@@ -69,7 +76,7 @@ Pure uses cookies. You trade one for your api token and then you can use the coo
 while your session persists (30 minute inactivity timeout, unless you destroy it early).
 
 ```ruby
-# Get a cookie for our session
+# Get a cookie for our session - required by Pure.
 url     = conf['base_url'] + 'auth/session'
 headers = conf['headers']
 params  = { api_token: token }
@@ -82,27 +89,19 @@ headers['Cookie'] = cookies
 Now we will send application type json and the cookie with each call.
 
 ```ruby
-# Create host and set list of WWN's
-params   = conf['params_host_testsrv01']
-url_host = conf['base_url'] + 'host/' + conf['newhost']
-host     = Stoarray.new(headers: headers, meth: 'Post', params: params, url: url_host).host
-puts host['response']
-
-# Create volumes and map them to new host
-conf['new_luns_testsrv01'].each do |vol|
-  url_vol = conf['base_url'] + 'volume/' + vol
-  voly = Stoarray.new(headers: headers, meth: 'Post', params: { :size => "10G" }, url: url_vol).volume
-  puts JSON.parse(voly.body) if verbose == true
-  url_map = url_host + '/volume/' + vol
-  mappy = Stoarray.new(headers: headers, meth: 'Post', params: {}, url: url_map).host
-  puts mappy['response'] if verbose == true
-end
-
+# Now refresh the clones
+params = conf['params_snap_u23']
+refresh = Stoarray.new(headers: headers, meth: 'Post', params: params, url: conf['base_url']).refresh
+puts "Status:   " + refresh['status'].to_s
+puts "Response: " + refresh['response'].to_s
 ```
 
-In the above example, you end up with a new host on the array, named testsrv01, including WWN's, and five, new 10GB volumes mapped to the host.
+In the above example, the source protection group is first snapped.
+Next, each target volume is overwritten with the source snapshot (snap_pairs).
+Any error along the way will cause the gem to return all status codes
+and all array responses. Success gives a 201, SUCCESS.
 
-###Now for Xtremio, json first:
+## Xtremio clone refresh, json first
     {
       "base_url":"https://xmsserver01/api/json/v2/types/",
       "headers": {
@@ -139,6 +138,11 @@ refresh = Stoarray.new(headers: headers, meth: 'Post', params: params, url: url)
 puts "Status:   " + refresh['status'].to_s
 puts "Response: " + refresh['response'].to_s
 ```
+
+## Troubleshooting
+
+error 307 - Enter fully qualified domain name (FQDN) for the array to fix.
+    purearray01.something.net instead of just purearray01
 
 ## Development
 
