@@ -1,7 +1,5 @@
 require 'base64'
 require 'cgi'
 require 'json'
-require 'net/http'
-require 'net/https'
-require 'uri'
+require 'rest-client'
 require 'arraycalls'

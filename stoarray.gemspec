@@ -27,4 +27,6 @@ Gem::Specification.new do |spec|
     spec.add_development_dependency deppy
   end
 
+  spec.add_runtime_dependency 'rest-client'
+
 end
