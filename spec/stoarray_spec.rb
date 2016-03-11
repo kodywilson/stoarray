@@ -1,6 +1,7 @@
 require 'spec_helper'
 
 base_url = 'https://xmspure/api/json/v2/types/'
+mock_url = 'https://demo7139290.mockable.io/api/1.4/'
 headers  = { "Content-Type" => "application/json" }
 params   = {}
 
@@ -10,8 +11,24 @@ describe Stoarray do
     expect(Stoarray::VERSION).not_to be nil
   end
 
-  it "does something useful" do
-    expect(false).to eq(false)
+  describe ".array" do
+    context "given the wrong url" do
+      it "returns a failure code" do
+        url = base_url + 'uhrray'
+        arrr = Stoarray.new(headers: headers, meth: 'Get', params: params, url: url).array
+        expect(arrr['status']).to eql(400)
+      end
+    end
+  end
+
+  describe ".array" do
+    context "when asked for the array name" do
+      it "returns the array name" do
+        url = mock_url + 'array'
+        array_name = Stoarray.new(headers: headers, meth: 'Get', params: params, url: url).array
+        expect(array_name['status']).to eql(200)
+      end
+    end
   end
 
   describe ".cookie" do
@@ -60,6 +77,16 @@ describe Stoarray do
         url = base_url + 'hast'
         hosty = Stoarray.new(headers: headers, meth: 'Get', params: params, url: url).host
         expect(hosty['status']).to eql(400)
+      end
+    end
+  end
+
+  describe ".pgroup" do
+    context "given the wrong url" do
+      it "returns a failure code" do
+        url = base_url + 'pgruop'
+        pdaddy = Stoarray.new(headers: headers, meth: 'Get', params: params, url: url).pgroup
+        expect(pdaddy['status']).to eql(400)
       end
     end
   end

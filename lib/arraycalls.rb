@@ -1,29 +1,43 @@
 class Stoarray
 
   VERBS = {
-    'get'    => Net::HTTP::Get,
     'post'   => Net::HTTP::Post,
     'put'    => Net::HTTP::Put,
     'delete' => Net::HTTP::Delete
   }
 
   def initialize(headers: {}, meth: 'Get', params: {}, url: 'https://array/')
-    @url = URI.parse(url) # URL of the call
     @headers = headers
-    @call = VERBS[meth.downcase].new(@url.path, initheader = @headers)
-    @call.body = params.to_json # Pure and Xtremio expect json parameters
+    @meth    = meth
+    @params  = params
+    @url     = url
+  end
+
+  def array
+    if @url.to_s =~ /array/
+      responder(verbal_gerbil)
+    else
+      error_text("array", @url.to_s, "array")
+    end
+  end
+
+  def cally
+    @url = URI.parse(@url) # URL of the call
+    @call = VERBS[@meth.downcase].new(@url.path, initheader = @headers)
+    @call.body = @params.to_json # Pure and Xtremio expect json parameters
     @request = Net::HTTP.new(@url.host, @url.port)
     @request.read_timeout = 30
     @request.use_ssl = true if @url.to_s =~ /https/
     @request.verify_mode = OpenSSL::SSL::VERIFY_NONE # parameterize?
+    response = @request.start { |http| http.request(@call) }
   end
 
   def cookie(testy: false)
     if @url.to_s =~ /auth\/session/
       case testy
       when false
-        @response = @request.start { |http| http.request(@call) }
-        all_cookies = @response.get_fields('set-cookie')
+        response = verbal_gerbil
+        all_cookies = response.get_fields('set-cookie')
       when true
         all_cookies = ['cookie time']
       end
@@ -48,8 +62,11 @@ class Stoarray
   end
 
   def flippy(temp_hash, testy: false)
+    # Normally I would let the code document itself, however...
+    # This method is to get around a "feature" of Xtremio where it renames the
+    # target snapshot set. We flip between name and name_347. Comprende?
     flippy = temp_hash['to-snapshot-set-id'] + '_347'
-    url = 'https://' + @url.host + '/api/json/v2/types/snapshot-sets'
+    url = 'https://' + URI.parse(@url).host + '/api/json/v2/types/snapshot-sets'
     case testy
     when false
       x = Stoarray.new(headers: @headers, meth: 'Get', params: {}, url: url).snap
@@ -70,27 +87,95 @@ class Stoarray
     temp_hash
   end
 
+  def getty
+    response = RestClient::Request.execute(headers: @headers, method: :get, url: @url, verify_ssl: false)
+  end
+
   def host
     if @url.to_s =~ /host/
-      response = @request.start { |http| http.request(@call) }
-      responder(response)
+      responder(verbal_gerbil)
     else
       error_text("host", @url.to_s, "host")
+    end
+  end
+
+  def pgroup
+    if @url.to_s =~ /pgroup/
+      responder(verbal_gerbil)
+    else
+      error_text("pgroup", @url.to_s, "pgroup")
     end
   end
 
   def refresh
     case @url.to_s
     when /snapshot/ # Xtremio
-      @call.body = flippy(JSON.parse(@call.body)).to_json
-      refreshy = @request.start { |http| http.request(@call) }
-      responder(refreshy)
-    when /volume/ # Pure, handle the interim snap automagically
-      # obviously not implemented yet :)
-      refreshy = @request.start { |http| http.request(@call) }
-      responder(refreshy)
+      @params = flippy(@params)
+      responder(verbal_gerbil)
+    when /1.4/ # Pure, handle the interim snap automagically
+      error_state = false
+      url     = 'https://' + URI.parse(@url).host + '/api/1.4/pgroup'
+      source  = @params['source']
+      suffix  = Time.new.strftime("%A") # Day of the week.
+      pam     = { :snap => true, :source => source, :suffix => suffix }
+      snap    = Stoarray.new(headers: @headers, meth: 'Post', params: pam, url: url).pgroup
+      respond = {
+        "response" => {
+          "snap" => {
+            "response" => snap['response']
+          }
+        },
+        "status" => {
+          "snap" => {
+            "status" => snap['status']
+          }
+        }
+      }
+      if snap['status'] >= 200 && snap['status'] <= 299
+        @params['snap_pairs'].each do |key, val|
+          tgt = 'clone_' + val # used only for logging!
+          src = source[0] + '.' + suffix + '.' + key
+          pam = { :overwrite => true, :source => src }
+          url = 'https://' + URI.parse(@url).host + '/api/1.4/volume/' + val
+          clone = Stoarray.new(headers: @headers, meth: 'Post', params: pam, url: url).volume
+          respond['response'][tgt] = {
+            "response" => clone['response']
+          }
+          respond['status'][tgt] = {
+            "status" => clone['status']
+          }
+        end
+        url   = 'https://' + URI.parse(@url).host + '/api/1.4/pgroup/' + source[0] + '.' + suffix
+        zappy = Stoarray.new(headers: @headers, meth: 'Delete', params: {}, url: url).pgroup
+        respond['response']['destroy'] = {
+          "response" => zappy['response']
+        }
+        respond['status']['destroy'] = {
+          "status" => zappy['status']
+        }
+        pam   = { :eradicate => true }
+        disintegrate = Stoarray.new(headers: @headers, meth: 'Delete', params: pam, url: url).pgroup
+        respond['response']['eradicate'] = {
+          "response" => disintegrate['response']
+        }
+        respond['status']['eradicate'] = {
+          "status" => disintegrate['status']
+        }
+      end
+      respond['status'].each do |key, val|
+        error_state = true if val.any? { |status, code| code.to_i < 200 || code.to_i > 299 }
+      end
+      if error_state == true
+        respond
+      else
+        response = {
+          "response" =>
+            "SUCCESS: Refresh completed for #{source[0]} protection group.\n",
+          "status" => 201
+        }
+      end
     else
-      error_text("refresh", @url.to_s, "snapshot or volume")
+      error_text("refresh", @url.to_s, "snapshot or 1.4")
     end
   end
 
@@ -103,17 +188,24 @@ class Stoarray
 
   def snap
     if @url.to_s =~ /snapshot/
-      response = @request.start { |http| http.request(@call) }
-      responder(response)
+      responder(verbal_gerbil)
     else
       error_text("snap", @url.to_s, "snapshot")
     end
   end
 
+  def verbal_gerbil
+    case @meth.downcase
+    when 'get'
+      verby = getty
+    else
+      verby = cally
+    end
+  end
+
   def volume
     if @url.to_s =~ /volume/
-      response = @request.start { |http| http.request(@call) }
-      responder(response)
+      responder(verbal_gerbil)
     else
       error_text("volume", @url.to_s, "volume")
     end
