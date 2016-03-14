@@ -2,8 +2,7 @@ class Stoarray
 
   VERBS = {
     'post'   => Net::HTTP::Post,
-    'put'    => Net::HTTP::Put,
-    'delete' => Net::HTTP::Delete
+    'put'    => Net::HTTP::Put
   }
 
   def initialize(headers: {}, meth: 'Get', params: {}, url: 'https://array/')
@@ -51,6 +50,10 @@ class Stoarray
     end
   end
 
+  def dl33t
+    response = RestClient::Request.execute(headers: @headers, method: :delete, url: @url, verify_ssl: false)
+  end
+
   def error_text(method_name, url, wanted)
     response = {
       "response" =>
@@ -61,22 +64,13 @@ class Stoarray
     }
   end
 
-  def flippy(temp_hash, testy: false)
+  def flippy(temp_hash)
     # Normally I would let the code document itself, however...
     # This method is to get around a "feature" of Xtremio where it renames the
     # target snapshot set. We flip between name and name_347. Comprende?
     flippy = temp_hash['to-snapshot-set-id'] + '_347'
     url = 'https://' + URI.parse(@url).host + '/api/json/v2/types/snapshot-sets'
-    case testy
-    when false
-      x = Stoarray.new(headers: @headers, meth: 'Get', params: {}, url: url).snap
-    when true
-      x = {
-        "response" => {
-          "snapshot-sets" => [ { "name" => flippy } ]
-        }
-      }
-    end
+    x = Stoarray.new(headers: @headers, meth: 'Get', params: {}, url: url).snap
     if x['response']['snapshot-sets'].any? { |y| y['name'].include?(flippy) }
       temp_hash['snapshot-set-name']  = temp_hash['to-snapshot-set-id']
       temp_hash['to-snapshot-set-id'] = flippy
@@ -116,7 +110,7 @@ class Stoarray
       error_state = false
       url     = 'https://' + URI.parse(@url).host + '/api/1.4/pgroup'
       source  = @params['source']
-      suffix  = Time.new.strftime("%A") # Day of the week.
+      suffix  = 'interim_snap'
       pam     = { :snap => true, :source => source, :suffix => suffix }
       snap    = Stoarray.new(headers: @headers, meth: 'Post', params: pam, url: url).pgroup
       respond = {
@@ -196,6 +190,8 @@ class Stoarray
 
   def verbal_gerbil
     case @meth.downcase
+    when 'delete'
+      verby = dl33t
     when 'get'
       verby = getty
     else
