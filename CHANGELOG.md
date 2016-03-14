@@ -2,6 +2,11 @@
 
 This file is used to list changes made to the stoarray gem.
 
+## 03142016
+
+* Additional tests using mockable.io: Refresh and flippy covered now.
+* New delete method using rest-client. Needs work! (handling params).
+
 ## 03112016
 
 * Using mockable.io for API call testing, updating rspec tests.

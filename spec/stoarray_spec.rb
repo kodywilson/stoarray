@@ -14,7 +14,7 @@ describe Stoarray do
   describe ".array" do
     context "given the wrong url" do
       it "returns a failure code" do
-        url = xtrm_url + 'uhrray'
+        url = pure_url + 'uhrray'
         arrr = Stoarray.new(headers: headers, meth: 'Get', params: params, url: url).array
         expect(arrr['status']).to eql(400)
       end
@@ -25,7 +25,7 @@ describe Stoarray do
     context "when asked for the array name" do
       it "returns the array name" do
         url = pure_url + 'array'
-        array_name = Stoarray.new(headers: headers, meth: 'Get', params: params, url: url).array
+        array_name = Stoarray.new(headers: headers, meth: 'Get', params: {}, url: url).array
         expect(array_name['status']).to eql(200)
       end
     end
@@ -34,7 +34,7 @@ describe Stoarray do
   describe ".cookie" do
     context "given the wrong url" do
       it "returns a failure code" do
-        url = xtrm_url + 'auth/sessoon'
+        url = pure_url + 'auth/sessoon'
         cooky_url = Stoarray.new(headers: headers, meth: 'Get', params: params, url: url).cookie
         expect(cooky_url['status']).to eql(400)
       end
@@ -44,7 +44,7 @@ describe Stoarray do
   describe ".cookie" do
     context "using test mode" do
       it "returns a string" do
-        url = xtrm_url + 'auth/session'
+        url = pure_url + 'auth/session'
         cooky_tst = Stoarray.new(headers: headers, meth: 'Get', params: params, url: url).cookie(testy: true)
         expect(cooky_tst).to eql('cookie time')
       end
@@ -65,8 +65,9 @@ describe Stoarray do
       it "returns a flipped snapshot set name" do
         temp_hash = Hash.new
         temp_hash['to-snapshot-set-id'] = "tstserver01"
-        flippy = Stoarray.new.flippy(temp_hash, testy: true)
-        expect(flippy['to-snapshot-set-id']).to eql('tstserver01_347')
+        url = xtrm_url + 'snapshot-sets'
+        flippy = Stoarray.new(headers: headers, url: url).flippy(temp_hash)
+        expect(flippy['snapshot-set-name']).to eql('tstserver01_347')
       end
     end
   end
@@ -74,7 +75,7 @@ describe Stoarray do
   describe ".host" do
     context "given the wrong url" do
       it "returns a failure code" do
-        url = xtrm_url + 'hast'
+        url = pure_url + 'hast'
         hosty = Stoarray.new(headers: headers, meth: 'Get', params: params, url: url).host
         expect(hosty['status']).to eql(400)
       end
@@ -85,8 +86,8 @@ describe Stoarray do
     context "when asked to change a host name" do
       it "returns a 200 on success" do
         url = pure_url + 'host/purehost01'
-        pdaddy = Stoarray.new(headers: headers, meth: 'Put', params: { "name" => "purehost02" }, url: url).host
-        expect(pdaddy['status']).to eql(200)
+        hosty = Stoarray.new(headers: headers, meth: 'Put', params: { "name" => "purehost02" }, url: url).host
+        expect(hosty['status']).to eql(200)
       end
     end
   end
@@ -94,7 +95,7 @@ describe Stoarray do
   describe ".pgroup" do
     context "given the wrong url" do
       it "returns a failure code" do
-        url = xtrm_url + 'pgruop'
+        url = pure_url + 'pgruop'
         pdaddy = Stoarray.new(headers: headers, meth: 'Get', params: params, url: url).pgroup
         expect(pdaddy['status']).to eql(400)
       end
@@ -102,9 +103,10 @@ describe Stoarray do
   end
 
   describe ".pgroup" do
-    context "when asked to create a new pgroup" do
+    context "when asked to snapshot a pgroup" do
       it "returns a 201 on success" do
-        url = pure_url + 'pgroup/newpgroup01'
+        params = { :snap => true, :source => 'purevolprd', :suffix => 'interim_snap' }
+        url = pure_url + 'pgroup'
         pdaddy = Stoarray.new(headers: headers, meth: 'Post', params: params, url: url).pgroup
         expect(pdaddy['status']).to eql(201)
       end
@@ -121,22 +123,60 @@ describe Stoarray do
     end
   end
 
+  describe ".refresh" do
+    context "asked to refresh an Xtremio snapshot set" do
+      it "returns a 201 on success" do
+        url = xtrm_url + 'snapshots'
+        params = { "from-consistency-group-id" => "prdserver01",
+                   "to-snapshot-set-id" => "tstserver01" }
+        refreshy = Stoarray.new(headers: headers, meth: 'Post', params: params, url: url).refresh
+        expect(refreshy['status']).to eql(201)
+      end
+    end
+  end
+
+  describe ".refresh" do
+    context "asked to refresh a Pure clone set" do
+      it "returns a 201 on success" do
+        url = pure_url
+        params = { "snap_pairs" => {
+                   "purevol_1_src" => "purevol_1_des"
+                  },
+                  "source" => ["purevolprd"]
+                  }
+        refreshy = Stoarray.new(headers: headers, meth: 'Post', params: params, url: url).refresh
+        expect(refreshy['status']).to eql(201)
+      end
+    end
+  end
+
   describe ".snap" do
     context "given the wrong url" do
       it "returns a failure code" do
         url = xtrm_url + 'snapslots'
-        snappy = Stoarray.new(headers: headers, meth: 'Get', params: params, url: url).snap
+        snappy = Stoarray.new(headers: headers, meth: 'Get', params: {}, url: url).snap
         expect(snappy['status']).to eql(400)
       end
     end
   end
 
   describe ".snap" do
-    context "when asked to show a snap" do
+    context "when asked to show snapshot sets" do
       it "returns a 200 on success" do
-        url = xtrm_url + 'snapshot-sets/?name=xms_snap_set_01'
-        pdaddy = Stoarray.new(headers: headers, meth: 'Get', params: params, url: url).snap
-        expect(pdaddy['status']).to eql(200)
+        url = xtrm_url + 'snapshot-sets'
+        snappy = Stoarray.new(headers: headers, meth: 'Get', params: {}, url: url).snap
+        expect(snappy['status']).to eql(200)
+      end
+    end
+  end
+
+  describe ".snap" do
+    context "when asked to show snapshot sets" do
+      it "displays the snapshot sets on the array" do
+        url = xtrm_url + 'snapshot-sets'
+        snappy = Stoarray.new(headers: headers, meth: 'Get', params: {}, url: url).snap
+        x = snappy['response']['snapshot-sets'].any? { |y| y['name'].include?('tstserver01') }
+        expect(x).to eql(true)
       end
     end
   end
@@ -145,7 +185,7 @@ describe Stoarray do
     context "given the wrong url" do
       it "returns a failure code" do
         url = xtrm_url + 'voluum'
-        voly = Stoarray.new(headers: headers, meth: 'Get', params: params, url: url).volume
+        voly = Stoarray.new(headers: headers, meth: 'Get', params: {}, url: url).volume
         expect(voly['status']).to eql(400)
       end
     end
@@ -155,8 +195,8 @@ describe Stoarray do
     context "when asked to create a new volume" do
       it "returns a 201 on success" do
         url = pure_url + 'volume/newpurevol01'
-        pdaddy = Stoarray.new(headers: headers, meth: 'Post', params: { "size" => "5G" }, url: url).volume
-        expect(pdaddy['status']).to eql(201)
+        voly = Stoarray.new(headers: headers, meth: 'Post', params: { "size" => "5G" }, url: url).volume
+        expect(voly['status']).to eql(201)
       end
     end
   end
