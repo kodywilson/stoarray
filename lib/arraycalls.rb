@@ -36,6 +36,7 @@ class Stoarray
       case testy
       when false
         response = verbal_gerbil
+        response.value
         all_cookies = response.get_fields('set-cookie')
       when true
         all_cookies = ['cookie time']

@@ -2,6 +2,11 @@
 
 This file is used to list changes made to the stoarray gem.
 
+## 03152016
+
+* Add Mark Gibbon's line to generate an error if a valid cookie is not received.
+* All code should be covered now except the cookie block!
+
 ## 03142016
 
 * Additional tests using mockable.io: Refresh and flippy covered now.

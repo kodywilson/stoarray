@@ -72,6 +72,18 @@ describe Stoarray do
     end
   end
 
+  describe ".flippy" do
+    context "given a hash containing to-snapshot-set-id" do
+      it "returns a flipped snapshot set name" do
+        temp_hash = Hash.new
+        temp_hash['to-snapshot-set-id'] = "tstserver02"
+        url = xtrm_url + 'snapshot-sets'
+        flippy = Stoarray.new(headers: headers, url: url).flippy(temp_hash)
+        expect(flippy['to-snapshot-set-id']).to eql('tstserver02_347')
+      end
+    end
+  end
+
   describe ".host" do
     context "given the wrong url" do
       it "returns a failure code" do
@@ -146,6 +158,21 @@ describe Stoarray do
                   }
         refreshy = Stoarray.new(headers: headers, meth: 'Post', params: params, url: url).refresh
         expect(refreshy['status']).to eql(201)
+      end
+    end
+  end
+
+  describe ".refresh" do
+    context "asked to refresh a Pure clone set" do
+      it "returns status 400 on failure" do
+        url = pure_url
+        params = { "snap_pairs" => {
+                   "purevol_1_src" => "purevol_2_des"
+                  },
+                  "source" => ["purevolprd"]
+                  }
+        refreshy = Stoarray.new(headers: headers, meth: 'Post', params: params, url: url).refresh
+        expect(refreshy['status']['clone_purevol_2_des']['status']).to eql(404)
       end
     end
   end
