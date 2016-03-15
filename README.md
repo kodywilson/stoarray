@@ -35,8 +35,8 @@ It is very easy to then build from there.
 ###First the json configuration file:
 
     {
-      "authorization":"123li123o90yourapitoken2h1hi3",
-      "base_url":"https:///purearray01.something.net/api/1.4/",
+      "authorization": "123li123o90yourapitoken2h1hi3",
+      "base_url": "https://purearray01.something.net/api/1.4/",
       "headers": { "Content-Type": "application/json" },
       "params_snap_u23": {
         "snap_pairs": {
