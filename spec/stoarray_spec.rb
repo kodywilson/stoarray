@@ -42,11 +42,11 @@ describe Stoarray do
   end
 
   describe ".cookie" do
-    context "using test mode" do
-      it "returns a string" do
-        url = pure_url + 'auth/session'
-        cooky_tst = Stoarray.new(headers: headers, meth: 'Get', params: params, url: url).cookie(testy: true)
-        expect(cooky_tst).to eql('cookie time')
+    context "when asking for a cookie" do
+      it "returns nil if no cookie is returned" do
+        url = 'http://www.mocky.io/v2/56ead94d1300001c01737801' + '/auth/session'
+        cooky_tst = Stoarray.new(headers: headers, meth: 'Post', params: params, url: url).cookie
+        expect(cooky_tst).to eql(nil)
       end
     end
   end
@@ -163,8 +163,8 @@ describe Stoarray do
   end
 
   describe ".refresh" do
-    context "asked to refresh a Pure clone set" do
-      it "returns status 400 on failure" do
+    context "asked to refresh a Pure clone set and given an invalid volume" do
+      it "returns status 404 on failure" do
         url = pure_url
         params = { "snap_pairs" => {
                    "purevol_1_src" => "purevol_2_des"
