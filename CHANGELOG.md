@@ -2,6 +2,14 @@
 
 This file is used to list changes made to the stoarray gem.
 
+## 03172016
+
+* All code should have test coverage now!
+* Conversion to rest-client complete. Removed getty, del33t, verbal_gerbil.
+* make_call - (previously cally) Added rescue so I can return error messages.
+* cookie - Removed "testy" stuff & added break on failure (raise).
+* Consistent success messages for both Pure and Xtremio clone refreshes.
+
 ## 03152016
 
 * Add Mark Gibbon's line to generate an error if a valid cookie is not received.

@@ -1,8 +1,10 @@
 class Stoarray
 
   VERBS = {
-    'post'   => Net::HTTP::Post,
-    'put'    => Net::HTTP::Put
+    'delete' => :Delete,
+    'get'    => :Get,
+    'post'   => :Post,
+    'put'    => :Put
   }
 
   def initialize(headers: {}, meth: 'Get', params: {}, url: 'https://array/')
@@ -14,45 +16,36 @@ class Stoarray
 
   def array
     if @url.to_s =~ /array/
-      responder(verbal_gerbil)
+      responder(make_call)
     else
       error_text("array", @url.to_s, "array")
     end
   end
 
-  def cally
-    @url = URI.parse(@url) # URL of the call
-    @call = VERBS[@meth.downcase].new(@url.path, initheader = @headers)
-    @call.body = @params.to_json # Pure and Xtremio expect json parameters
-    @request = Net::HTTP.new(@url.host, @url.port)
-    @request.read_timeout = 30
-    @request.use_ssl = true if @url.to_s =~ /https/
-    @request.verify_mode = OpenSSL::SSL::VERIFY_NONE # parameterize?
-    response = @request.start { |http| http.request(@call) }
-  end
-
-  def cookie(testy: false)
-    if @url.to_s =~ /auth\/session/
-      case testy
-      when false
-        response = verbal_gerbil
-        response.value
-        all_cookies = response.get_fields('set-cookie')
-      when true
-        all_cookies = ['cookie time']
-      end
-      cookies_array = Array.new
-      all_cookies.each { | cookie |
-        cookies_array.push(cookie.split('; ')[0])
-      }
-      cookies = cookies_array.join('; ')
+  def make_call
+    @params = @params.to_json unless @meth.downcase == 'get' || @meth.downcase == 'delete'
+    begin
+      response = RestClient::Request.execute(headers: @headers,
+                                             method: VERBS[@meth.downcase],
+                                             payload: @params,
+                                             timeout: 30,
+                                             url: @url,
+                                             verify_ssl: false)
+    rescue => e
+      e.response
     else
-      error_text("cookie", @url.to_s, 'auth/session')
+      response
     end
   end
 
-  def dl33t
-    response = RestClient::Request.execute(headers: @headers, method: :delete, url: @url, verify_ssl: false)
+  def cookie
+    if @url =~ /auth\/session/
+      response = make_call
+      raise 'There was an issue getting a cookie!' unless response.code == 200
+      cookie = (response.cookies.map{|key,val| key + '=' + val})[0]
+    else
+      error_text("cookie", @url.to_s, 'auth/session')
+    end
   end
 
   def error_text(method_name, url, wanted)
@@ -66,7 +59,6 @@ class Stoarray
   end
 
   def flippy(temp_hash)
-    # Normally I would let the code document itself, however...
     # This method is to get around a "feature" of Xtremio where it renames the
     # target snapshot set. We flip between name and name_347. Comprende?
     flippy = temp_hash['to-snapshot-set-id'] + '_347'
@@ -82,13 +74,9 @@ class Stoarray
     temp_hash
   end
 
-  def getty
-    response = RestClient::Request.execute(headers: @headers, method: :get, url: @url, verify_ssl: false)
-  end
-
   def host
     if @url.to_s =~ /host/
-      responder(verbal_gerbil)
+      responder(make_call)
     else
       error_text("host", @url.to_s, "host")
     end
@@ -96,7 +84,7 @@ class Stoarray
 
   def pgroup
     if @url.to_s =~ /pgroup/
-      responder(verbal_gerbil)
+      responder(make_call)
     else
       error_text("pgroup", @url.to_s, "pgroup")
     end
@@ -105,13 +93,22 @@ class Stoarray
   def refresh
     case @url.to_s
     when /snapshot/ # Xtremio
+      tgt     = @params['to-snapshot-set-id']
       @params = flippy(@params)
-      responder(verbal_gerbil)
+      src     = @params['from-consistency-group-id']
+      cln     = responder(make_call)
+      if cln['status'] == 201
+        cln['response'] = 'SUCCESS: Xtremio refresh completed from consistency group ' \
+                          + src + ' to snapshot set ' + tgt + '.'
+        cln
+      else
+        cln
+      end
     when /1.4/ # Pure, handle the interim snap automagically
       error_state = false
       url     = 'https://' + URI.parse(@url).host + '/api/1.4/pgroup'
       source  = @params['source']
-      suffix  = 'interim_snap'
+      suffix  = 'interim'
       pam     = { :snap => true, :source => source, :suffix => suffix }
       snap    = Stoarray.new(headers: @headers, meth: 'Post', params: pam, url: url).pgroup
       respond = {
@@ -148,8 +145,8 @@ class Stoarray
         respond['status']['destroy'] = {
           "status" => zappy['status']
         }
-        pam   = { :eradicate => true }
-        disintegrate = Stoarray.new(headers: @headers, meth: 'Delete', params: pam, url: url).pgroup
+        url = url + '?eradicate=true'
+        disintegrate = Stoarray.new(headers: @headers, meth: 'Delete', params: {}, url: url).pgroup
         respond['response']['eradicate'] = {
           "response" => disintegrate['response']
         }
@@ -165,7 +162,7 @@ class Stoarray
       else
         response = {
           "response" =>
-            "SUCCESS: Refresh completed for #{source[0]} protection group.\n",
+            "SUCCESS: Pure refresh completed from #{source[0]} protection group.\n",
           "status" => 201
         }
       end
@@ -174,7 +171,7 @@ class Stoarray
     end
   end
 
-  def responder(response) # combine into one method? with error_text
+  def responder(response)
     response = {
       "response" => JSON.parse(response.body),
       "status" => response.code.to_i
@@ -183,26 +180,15 @@ class Stoarray
 
   def snap
     if @url.to_s =~ /snapshot/
-      responder(verbal_gerbil)
+      responder(make_call)
     else
       error_text("snap", @url.to_s, "snapshot")
     end
   end
 
-  def verbal_gerbil
-    case @meth.downcase
-    when 'delete'
-      verby = dl33t
-    when 'get'
-      verby = getty
-    else
-      verby = cally
-    end
-  end
-
   def volume
     if @url.to_s =~ /volume/
-      responder(verbal_gerbil)
+      responder(make_call)
     else
       error_text("volume", @url.to_s, "volume")
     end
