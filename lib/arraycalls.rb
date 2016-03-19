@@ -60,7 +60,10 @@ class Stoarray
 
   def flippy(temp_hash)
     # This method is to get around a "feature" of Xtremio where it renames the
-    # target snapshot set. We flip between name and name_347. Comprende?
+    # target snapshot set during a refresh making it more difficult to automate
+    # refreshes as the target keeps changing names. Instead of doing that we
+    # flip back and forth between to-snapshot-set-id and to-snapshot-set-id_347.
+    # Pass the consistent name, "to-snapshot-set-id" and it flips for you.
     flippy = temp_hash['to-snapshot-set-id'] + '_347'
     url = 'https://' + URI.parse(@url).host + '/api/json/v2/types/snapshot-sets'
     x = Stoarray.new(headers: @headers, meth: 'Get', params: {}, url: url).snap

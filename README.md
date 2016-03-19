@@ -144,6 +144,18 @@ puts "Response: " + refresh['response'].to_s
 error 307 - Enter fully qualified domain name (FQDN) for the array to fix.
     purearray01.something.net instead of just purearray01
 
+Solaris 10 - You may have to specify the path to make/gmake to install the gem.
+
+A note about the flippy method in array_calls.rb:
+
+    # This method is to get around a "feature" of Xtremio where it renames the
+    # target snapshot set during a refresh making it more difficult to automate
+    # refreshes as the target keeps changing names. Instead of doing that we
+    # flip back and forth between to-snapshot-set-id and to-snapshot-set-id_347.
+    # Pass the consistent name, "to-snapshot-set-id" and it flips for you.
+
+Essentially, by design, the array wants to rename the target snapshot set when you refresh. This is not cool when you want to use a consistent name for the set, ie. for automation. The flippy method takes the to-snapshot-set-id from your json or passed as a parameter and then flips back and forth between it and to-snapshot-set-id_347. This way you can keep the same name in your json/scripts, etc.
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
