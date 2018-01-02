@@ -146,6 +146,34 @@ error 307 - Enter fully qualified domain name (FQDN) for the array to fix.
 
 Solaris 10 - You may have to specify the path to make/gmake to install the gem.
 
+Error:
+
+```bash
+# gem install stoarray 
+Fetching: unf_ext-0.0.7.4.gem (100%)
+Building native extensions.  This could take a while...
+ERROR:  Error installing stoarray:
+        ERROR: Failed to build gem native extension.
+
+...followed by...
+
+make failed, exit code 1
+```
+
+Fix:
+
+```bash
+# which gmake
+/usr/sfw/bin/gmake
+# export MAKE=/usr/sfw/bin/gmake
+# gem install stoarray -s http://rubygems.nordstrom.net
+Building native extensions.  This could take a while...
+
+...
+
+it should complete successfully now.
+```
+
 A note about the flippy method in array_calls.rb:
 
     # This method is to get around a "feature" of Xtremio where it renames the

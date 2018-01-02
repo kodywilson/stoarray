@@ -2,6 +2,10 @@
 
 This file is used to list changes made to the stoarray gem.
 
+## 01022018
+
+* Update README with actual error and fix for Solaris.
+
 ## 03182016
 
 * Trying to give a better explanation for the flippy method.
